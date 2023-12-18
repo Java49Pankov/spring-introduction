@@ -5,9 +5,8 @@ import java.util.List;
 import org.springframework.web.bind.annotation.*;
 
 import lombok.RequiredArgsConstructor;
-import telran.spring.Person;
+import telran.spring.dto.Person;
 import telran.spring.service.GreetingsService;
-import telran.spring.service.IdName;
 
 @RestController
 @RequestMapping("greetings")

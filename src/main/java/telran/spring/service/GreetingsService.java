@@ -2,11 +2,11 @@ package telran.spring.service;
 
 import java.util.List;
 
-import telran.spring.Person;
+import telran.spring.dto.Person;
 
 public interface GreetingsService {
 	String getGreetings(long id);
-
+ 
 	Person getPerson(long id);
 
 	List<Person> getPersonsByCity(String city);
