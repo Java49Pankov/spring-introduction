@@ -4,41 +4,55 @@ import java.util.*;
 
 import org.springframework.stereotype.Service;
 
+import telran.spring.Person;
+
 @Service
 public class GreetingsServiceImpl implements GreetingsService {
-	Map<Long, String> greetingsMap = new HashMap<>(Map.of(123l, "David", 124l, "Sara", 125l, "Rivka"));
+	Map<Long, Person> greetingsMap = new HashMap<>();
 
 	@Override
 	public String getGreetings(long id) {
-		String name = greetingsMap.getOrDefault(id, "Unknown Guest");
-		return "Hello, " + name;
+		Person person = greetingsMap.get(id);
+		String personName = person == null ? " Unknown Guest" : person.name();
+		return "Hello, " + personName;
 	}
 
 	@Override
-	public String addName(IdName idName) {
-		String name = greetingsMap.putIfAbsent(idName.id(), idName.name());
-		if (name != null) {
-			throw new IllegalStateException(idName.id() + " already exists");
+	public Person addPerson(Person person) {
+		long personId = person.id();
+		if (greetingsMap.containsKey(personId)) {
+			throw new IllegalStateException(person.id() + " already exist");
 		}
-		return idName.name();
+		greetingsMap.put(personId, person);
+		return person;
 	}
 
 	@Override
-	public String deleteName(long id) {
-		String name = greetingsMap.remove(id);
-		if (name == null) {
-			throw new IllegalStateException(id + " not found");
-		}
-		return name;
+	public Person getPerson(long id) {
+		return greetingsMap.get(id);
 	}
 
 	@Override
-	public String updateName(IdName idName) {
-		if (!greetingsMap.containsKey(idName.id())) {
-			throw new IllegalStateException(idName.id() + " not found");
+	public List<Person> getPersonsByCity(String city) {
+		return greetingsMap.values().stream().filter(c -> c.city().equals(city)).toList();
+	}
+
+	@Override
+	public Person deletePerson(long id) {
+		if (greetingsMap.containsKey(id)) {
+			throw new IllegalStateException(id + " does not exist");
 		}
-		greetingsMap.put(idName.id(), idName.name());
-		return idName.name();
+		return greetingsMap.remove(id);
+	}
+
+	@Override
+	public Person updatePerson(Person person) {
+		long personId = person.id();
+		if (!greetingsMap.containsKey(personId)) {
+			throw new IllegalStateException(personId + " does not exist");
+		}
+		greetingsMap.put(personId, person);
+		return person;
 	}
 
 }
