@@ -4,23 +4,28 @@ import java.util.List;
 
 import org.springframework.web.bind.annotation.*;
 
+import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import telran.spring.dto.Person;
 import telran.spring.service.GreetingsService;
 
 @RestController
 @RequestMapping("greetings")
 @RequiredArgsConstructor
+@Slf4j
 public class GreetingsController {
 	final GreetingsService greetingsService;
 
 	@GetMapping("{id}")
 	String getGreetings(@PathVariable long id) {
+		log.debug("method: getGreetings received id{}", id);
 		return greetingsService.getGreetings(id);
 	}
 
 	@PostMapping
-	Person addPerson(@RequestBody Person person) {
+	Person addPerson(@RequestBody @Valid Person person) {
+		log.debug("method: addPerson, received {}", person);
 		return greetingsService.addPerson(person);
 	}
 
@@ -35,13 +40,19 @@ public class GreetingsController {
 	}
 
 	@PutMapping
-	Person updatePerson(@RequestBody Person person) {
+	Person updatePerson(@RequestBody @Valid Person person) {
 		return greetingsService.updatePerson(person);
 	}
 
 	@GetMapping("city/{city}")
 	List<Person> getPersonByCity(@PathVariable String city) {
-		return greetingsService.getPersonsByCity(city);
+		List<Person> result = greetingsService.getPersonsByCity(city);
+		if (result.isEmpty()) {
+			log.warn("received empty list for city {}", city);
+		} else {
+			log.trace("result is {}", result);
+		}
+		return result;
 	}
 
 }
