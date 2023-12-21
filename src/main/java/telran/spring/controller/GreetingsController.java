@@ -31,16 +31,19 @@ public class GreetingsController {
 
 	@GetMapping("id/{id}")
 	Person getPerson(@PathVariable long id) {
+		log.debug("mehtod: getPerson, received id {}", id);
 		return greetingsService.getPerson(id);
 	}
 
 	@DeleteMapping("{id}")
 	Person deletePerson(@PathVariable long id) {
+		log.debug("method: deletePerson received id {}", id);
 		return greetingsService.deletePerson(id);
 	}
 
 	@PutMapping
 	Person updatePerson(@RequestBody @Valid Person person) {
+		log.debug("method: updatePerson received {}", person);
 		return greetingsService.updatePerson(person);
 	}
 
