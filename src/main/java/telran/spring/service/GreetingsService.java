@@ -6,7 +6,7 @@ import telran.spring.dto.Person;
 
 public interface GreetingsService {
 	String getGreetings(long id);
- 
+
 	Person getPerson(long id);
 
 	List<Person> getPersonsByCity(String city);
@@ -16,5 +16,9 @@ public interface GreetingsService {
 	Person deletePerson(long id);
 
 	Person updatePerson(Person person);
+
+	void save(String fileName);
+
+	void restore(String fileName);
 
 }
