@@ -1,13 +1,15 @@
 package telran.spring.service;
 
-import java.util.*;
-
-import org.springframework.beans.factory.annotation.Value;
-import org.springframework.stereotype.Service;
-
 import jakarta.annotation.PostConstruct;
 import jakarta.annotation.PreDestroy;
+import java.io.*;
+import java.io.IOException;
+import java.nio.file.Files;
+import java.nio.file.Path;
+import java.util.*;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.beans.factory.annotation.Value;
+import org.springframework.stereotype.Service;
 import telran.exceptions.NotFoundException;
 import telran.spring.dto.Person;
 
@@ -35,7 +37,6 @@ public class GreetingsServiceImpl implements GreetingsService {
 		} else {
 			name = person.name();
 			log.debug("person name is {}", name);
-
 		}
 		return String.format("%s, %S", greetingMessage, name);
 	}
@@ -90,16 +91,28 @@ public class GreetingsServiceImpl implements GreetingsService {
 
 	@Override
 	public void save(String fileName) {
-		// TODO saving persons data into ObjectOutputStream
-		log.info("persons data have been saved");
-
+		try (ObjectOutputStream output = new ObjectOutputStream(new FileOutputStream(fileName))) {
+			output.writeObject(new ArrayList<Person>(greetingsMap.values()));
+			log.info("persons data have been saved");
+		} catch (Exception e) {
+			log.error("{}", e);
+		}
 	}
 
+	@SuppressWarnings("unchecked")
 	@Override
 	public void restore(String fileName) {
-		// TODO restoring from file using ObjectInputStream
-		log.info("restored from file {}", fileName);
-
+		if (Files.exists(Path.of(fileName))) {
+			try (ObjectInputStream input = new ObjectInputStream(new FileInputStream(fileName))) {
+				List<Person> employeesList = (List<Person>) input.readObject();
+				employeesList.forEach(this::addPerson);
+				log.info("restored from file");
+			} catch (FileNotFoundException e) {
+				log.warn("No file with data found");
+			} catch (Exception e) {
+				log.error("{}", e);
+			}
+		}
 	}
 
 	@PostConstruct
@@ -111,5 +124,4 @@ public class GreetingsServiceImpl implements GreetingsService {
 	void saveToFile() {
 		save(fileName);
 	}
-
 }
