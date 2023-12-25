@@ -1,11 +1,11 @@
 package telran.spring;
 
 import static org.junit.jupiter.api.Assertions.*;
+import static org.mockito.Mockito.when;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.*;
 import static org.springframework.test.web.servlet.result.MockMvcResultHandlers.print;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
-import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -31,15 +31,20 @@ public class GreetingsControllerTest {
 	@Autowired
 	MockMvc mockMvc;
 
-	Person personNormal = new Person(123, "Vasya", "Rehovot", "vasya@gmail.com", "054-1234567");
-	Person personNormalUpdate = new Person(123, "Vasya", "Moscow", "vasya@gmail.com", "054-1234567");
-
-	Person personWrongPhone = new Person(124, "Vasya", "Rehovot", "vasya@gmail.com", "54-1234567");
-	Person personWrongEmail = new Person(123, "Vasya", "Rehovot", "vasyagmail.com", "054-1234567");
-	Person personWrongCity = new Person(123, "Vasya", "Rehovot", "", "054-1234567");
-	PersonIdString personWrongIdString = new PersonIdString("abs", "Vasya", "Rehovot", "vasya@gmail.com",
+	Person personNormal = new Person(123, "Vasya", "Rehovot", "vasya@gmail.com",
 			"054-1234567");
-	Person personWrongName = new Person(123, "sa", "Rehovot", "vasya@gmail.com", "054-1234567");
+	Person personNormalUpdated = new Person(123, "Vasya", "Lod", "vasya@gmail.com",
+			"054-1234567");
+	Person personWrongPhone = new Person(124, "Vasya", "Rehovot", "vasya@gmail.com",
+			"54-1234567");
+	Person personWrongCity = new Person(124, "Vasya", null, "vasya@gmail.com",
+			"+972-54-1234567");
+	Person personWrongName = new Person(123, "as", "Rehovot", "vasya@gmail.com",
+			"054-1234567");
+	PersonIdString personWrongId = new PersonIdString("abc", "Vasya", "Rehovot", "vasya@gmail.com",
+			"054-1234567");
+	Person personWrongMail = new Person(123, "Vasya", "Rehovot", "vasya",
+			"054-1234567");
 
 	@Autowired
 	ObjectMapper objectMapper;
@@ -54,12 +59,40 @@ public class GreetingsControllerTest {
 
 	@Test
 	void normalFlowAddPersonTest() throws Exception {
-		mockMvc
+		when(greetingsService.addPerson(personNormal))
+				.thenReturn(personNormal);
+
+		String personJson = objectMapper.writeValueAsString(personNormal);
+		String response = mockMvc
 				.perform(post("http://localhost:8080/greetings")
 						.contentType(MediaType.APPLICATION_JSON)
-						.content(objectMapper.writeValueAsString(personNormal)))
+						.content(personJson))
 				.andDo(print())
-				.andExpect(status().isOk());
+				.andExpect(status().isOk())
+				.andReturn()
+				.getResponse()
+				.getContentAsString();
+
+		assertEquals(personJson, response);
+	}
+
+	@Test
+	void alreadyExistsAddPersonTest() throws Exception {
+		String exceptionMessage = "already exists";
+		when(greetingsService.addPerson(personNormal))
+				.thenThrow(new IllegalStateException(exceptionMessage));
+		String personJson = objectMapper.writeValueAsString(personNormal);
+		String response = mockMvc
+				.perform(post("http://localhost:8080/greetings")
+						.contentType(MediaType.APPLICATION_JSON)
+						.content(personJson))
+				.andDo(print())
+				.andExpect(status().isBadRequest())
+				.andReturn()
+				.getResponse()
+				.getContentAsString();
+
+		assertEquals(exceptionMessage, response);
 	}
 
 	@Test
@@ -82,7 +115,7 @@ public class GreetingsControllerTest {
 		String response = mockMvc
 				.perform(post("http://localhost:8080/greetings")
 						.contentType(MediaType.APPLICATION_JSON)
-						.content(objectMapper.writeValueAsString(personWrongEmail)))
+						.content(objectMapper.writeValueAsString(personWrongMail)))
 				.andDo(print())
 				.andExpect(status().isBadRequest())
 				.andReturn()
@@ -127,7 +160,7 @@ public class GreetingsControllerTest {
 		String response = mockMvc
 				.perform(post("http://localhost:8080/greetings")
 						.contentType(MediaType.APPLICATION_JSON)
-						.content(objectMapper.writeValueAsString(personWrongIdString)))
+						.content(objectMapper.writeValueAsString(personWrongId)))
 				.andDo(print())
 				.andExpect(status().isBadRequest())
 				.andReturn()
@@ -135,7 +168,7 @@ public class GreetingsControllerTest {
 				.getContentAsString();
 
 		assertEquals(
-				"JSON parse error: Cannot deserialize value of type `long` from String \"abs\": not a valid `long` value",
+				"JSON parse error: Cannot deserialize value of type `long` from String \"abc\": not a valid `long` value",
 				response);
 	}
 
@@ -144,7 +177,7 @@ public class GreetingsControllerTest {
 		mockMvc
 				.perform(put("http://localhost:8080/greetings")
 						.contentType(MediaType.APPLICATION_JSON)
-						.content(objectMapper.writeValueAsString(personNormalUpdate)))
+						.content(objectMapper.writeValueAsString(personNormalUpdated)))
 				.andDo(print())
 				.andExpect(status().isOk());
 	}
