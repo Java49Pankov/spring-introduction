@@ -6,6 +6,10 @@ import static org.springframework.test.web.servlet.request.MockMvcRequestBuilder
 import static org.springframework.test.web.servlet.result.MockMvcResultHandlers.print;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
+import java.io.UnsupportedEncodingException;
+import java.util.List;
+
+import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -13,6 +17,8 @@ import org.springframework.boot.test.autoconfigure.web.servlet.WebMvcTest;
 import org.springframework.boot.test.mock.mockito.MockBean;
 import org.springframework.http.MediaType;
 import org.springframework.test.web.servlet.MockMvc;
+
+import telran.exceptions.NotFoundException;
 import telran.spring.controller.GreetingsController;
 import telran.spring.dto.Person;
 import telran.spring.service.GreetingsService;
@@ -174,43 +180,141 @@ public class GreetingsControllerTest {
 
 	@Test
 	void updatePersonTest() throws Exception {
-		mockMvc
+		when(greetingsService.updatePerson(personNormalUpdated))
+				.thenReturn(personNormalUpdated);
+		String personUpdateJson = objectMapper.writeValueAsString(personNormalUpdated);
+		String response = mockMvc
 				.perform(put("http://localhost:8080/greetings")
 						.contentType(MediaType.APPLICATION_JSON)
-						.content(objectMapper.writeValueAsString(personNormalUpdated)))
+						.content(personUpdateJson))
 				.andDo(print())
-				.andExpect(status().isOk());
+				.andExpect(status().isOk())
+				.andReturn()
+				.getResponse()
+				.getContentAsString();
+
+		assertEquals(personUpdateJson, response);
+	}
+
+	@Test
+	void updatePersonNotFoundTest() throws Exception {
+		String exceptionMessage = "person not found";
+		when(greetingsService.updatePerson(personNormalUpdated))
+				.thenThrow(new NotFoundException(exceptionMessage));
+
+		String personUpdateJson = objectMapper.writeValueAsString(personNormalUpdated);
+		String response = mockMvc
+				.perform(put("http://localhost:8080/greetings")
+						.contentType(MediaType.APPLICATION_JSON)
+						.content(personUpdateJson))
+				.andDo(print())
+				.andExpect(status().isNotFound())
+				.andReturn()
+				.getResponse()
+				.getContentAsString();
+
+		assertEquals(exceptionMessage, response);
+
 	}
 
 	@Test
 	void getPersonTest() throws Exception {
-		mockMvc
-				.perform(get("http://localhost:8080/greetings/id/123"))
+		long id = 123;
+		long idNotExist = 500;
+		when(greetingsService.getPerson(id))
+				.thenReturn(personNormal);
+		
+		when(greetingsService.getPerson(idNotExist))
+				.thenReturn(null);
+		
+		String personJson = objectMapper.writeValueAsString(personNormal);
+		String response = getResponse(id);
+		assertEquals(personJson, response);
+
+		response = getResponse(idNotExist);
+		assertEquals("", response);
+
+	}
+
+	private String getResponse(long id) throws Exception {
+		return mockMvc
+				.perform(get("http://localhost:8080/greetings/id/" + id))
 				.andDo(print())
-				.andExpect(status().isOk());
+				.andExpect(status().isOk())
+				.andReturn()
+				.getResponse()
+				.getContentAsString();
 	}
 
 	@Test
 	void deletePersonTest() throws Exception {
-		mockMvc
+		when(greetingsService.deletePerson(123))
+				.thenReturn(personNormal);
+		
+		String personJson = objectMapper.writeValueAsString(personNormal);
+		String response = mockMvc
 				.perform(delete("http://localhost:8080/greetings/123"))
 				.andDo(print())
-				.andExpect(status().isOk());
+				.andExpect(status().isOk())
+				.andReturn()
+				.getResponse()
+				.getContentAsString();
+
+		assertEquals(personJson, response);
+	}
+
+	@Test
+	void deletePersonNotFound() throws Exception {
+		String exceptionMessage = "person not found";
+		when(greetingsService.deletePerson(124))
+				.thenThrow(new NotFoundException(exceptionMessage));
+
+		String response = mockMvc
+				.perform(delete("http://localhost:8080/greetings/124"))
+				.andDo(print())
+				.andExpect(status().isNotFound())
+				.andReturn()
+				.getResponse()
+				.getContentAsString();
+
+		assertEquals(exceptionMessage, response);
 	}
 
 	@Test
 	void getPersonByCityTest() throws Exception {
-		mockMvc
+		String city = "Rehovot";
+		when(greetingsService.getPersonsByCity(city))
+				.thenReturn(List.of(personNormal, personNormalUpdated));
+		
+		Person[] expected = { personNormal, personNormalUpdated };
+
+		String response = mockMvc
 				.perform(get("http://localhost:8080/greetings/city/Rehovot"))
 				.andDo(print())
-				.andExpect(status().isOk());
+				.andExpect(status().isOk())
+				.andReturn()
+				.getResponse()
+				.getContentAsString();
+
+		Person[] actual = objectMapper.readValue(response, Person[].class);
+		assertArrayEquals(expected, actual);
+
 	}
 
 	@Test
 	void getGreetingsTest() throws Exception {
-		mockMvc
+		String message = "rerson exists";
+		when(greetingsService.getGreetings(123))
+				.thenReturn(message);
+
+		String response = mockMvc
 				.perform(get("http://localhost:8080/greetings/123"))
 				.andDo(print())
-				.andExpect(status().isOk());
+				.andExpect(status().isOk())
+				.andReturn()
+				.getResponse()
+				.getContentAsString();
+
+		assertEquals(message, response);
 	}
 }

@@ -5,6 +5,7 @@ import static org.junit.jupiter.api.Assertions.*;
 import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.util.List;
 
 import org.junit.jupiter.api.*;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -25,6 +26,8 @@ class GreetingsServiceTest {
 	Person personNormal = new Person(123, "Vasya", "Rehovot", "vasya@gmail.com",
 			"054-1234567");
 	Person personNormalUpdated = new Person(123, "Vasya", "Lod", "vasya@gmail.com",
+			"054-1234567");
+	Person personNormal_2 = new Person(127, "Vasya", "Rehovot", "vasya@gmail.com",
 			"054-1234567");
 	Person personNotFound = new Person(500, "Vasya", "Rehovot", "vasya@gmail.com",
 			"054-1234567");
@@ -81,5 +84,22 @@ class GreetingsServiceTest {
 	@Order(8)
 	void persistanceTest() {
 		assertEquals(personNormalUpdated, greetingsService.getPerson(123));
+	}
+
+	@Test
+	@Order(10)
+	void deletePersonTest() {
+		assertEquals(personNormalUpdated, greetingsService.deletePerson(123));
+		assertTrue(greetingsService.getPersonsByCity("Lod").isEmpty());
+		assertTrue(greetingsService.getPersonsByCity("Rehovot").isEmpty());
+		assertThrowsExactly(NotFoundException.class, () -> greetingsService.deletePerson(123));
+	}
+
+	@Test
+	@Order(9)
+	void getPersonByCityTest() {
+		List<Person> expected = List.of(personNormalUpdated);
+		assertIterableEquals(expected, greetingsService.getPersonsByCity("Lod"));
+		assertTrue(greetingsService.getPersonsByCity("Rehovot").isEmpty());
 	}
 }
